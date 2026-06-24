@@ -88,3 +88,93 @@ class Particle:  # pylint: disable=too-few-public-methods
             raise ValueError(f"{statistics=} not in {Particle.STATISTICS_OPTIONS}")
         assert isinstance(totalDOFs, int), "totalDOFs must be an integer"
         assert isinstance(index, int), "index must be an integer"
+
+class ComplexMassParticle(Particle):
+    def __init__(self, 
+        name: str,
+        index: int,
+        msqVacuum: typing.Callable[[Fields | FieldPoint], np.ndarray],
+        msqDerivative: typing.Callable[[Fields | FieldPoint], np.ndarray],
+        phase: typing.Callable[[Fields | FieldPoint], np.ndarray],
+        statistics: str,
+        totalDOFs: int,
+    ) -> None:
+        r"""Initialisation
+        
+        Parameters
+        ----------
+        name : string
+            A string naming the particle species.
+        index : int
+            Integer identifier for the particle species. Must be unique
+            and match the intended particle index in matrix elements.
+        msqVacuum : function
+            Function :math:`m^2_0(\phi)`, should take a Fields or FieldPoint object and
+            return an array of length Fields.NumPoints(). The background field dependent
+            but temperature independent part of the effective mass squared.
+        msqDerivative : function
+            Function :math:`d(m_0^2)/d(\phi)`, should take a Fields or FieldPoints
+            object and return an array of shape Fields.shape.
+        phase : function
+            Function :math: `\theta(\phi)`, should take a Fields or FieldPoints
+            object and return an array of shape Fields.shape.
+        statistics : {\"Fermion\", \"Boson\"}
+            Particle statistics.
+        totalDOFs : int
+            Total number of degrees of freedom (should include the multiplicity
+            factor.
+        
+        Returns
+        -------
+        cls : ComplexMassParticle
+            An object of the ComplexMassParticle class.
+    
+        """
+
+        ComplexMassParticle._validateInput(
+            name,
+            index,
+            msqVacuum,
+            msqDerivative,
+            phase,
+            statistics,
+            totalDOFs,
+        )
+
+        super().__init__(
+            name,
+            index,
+            msqVacuum,
+            msqDerivative,
+            statistics,
+            totalDOFs
+        )
+
+        self.phase = phase
+
+
+        @staticmethod
+        def _validateInput(  # pylint: disable=unused-argument
+            name: str,
+            index: int,
+            msqVacuum: typing.Callable[[Fields], np.ndarray],
+            msqDerivative: typing.Callable[[Fields], np.ndarray],
+            phase: typing.Callable[[Fields], np.ndarray],
+            statistics: str,
+            totalDOFs: int,
+        ) -> None:
+            """
+            Checks that the input fits expectations
+            """
+
+            Particle._validateInput(
+                name,
+                index,
+                msqVacuum,
+                msqDerivative,
+                statistics,
+                totalDOFs,
+            )
+
+            if not callable(phase):
+                raise TypeError("phase must be callable")
